@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int      @id @default(autoincrement())
+  phoneNumber      String   @unique @map("phone_number") @db.VarChar(20)
+  fullName         String?  @map("full_name") @db.VarChar(100)
+  email            String?  @db.VarChar(100)
+  createdAt        DateTime @default(now()) @map("created_at")
+  defaultAddressId Int?     @map("default_address_id")
+  orders           Order[]
+
+  @@map("users")
+}
+
+model Category {
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(50)
+  displayOrder Int       @default(0) @map("display_order")
+  imageUrl     String?   @map("image_url") @db.VarChar(255)
+  isActive     Boolean   @default(true) @map("is_active")
+  products     Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id            Int         @id @default(autoincrement())
+  categoryId    Int?        @map("category_id")
+  category      Category?   @relation(fields: [categoryId], references: [id])
+  name          String      @db.VarChar(100)
+  description   String?     @db.Text
+  priceCents    Int         @map("price_cents")
+  imageUrl      String      @map("image_url") @db.VarChar(255)
+  stockQuantity Int         @default(0) @map("stock_quantity")
+  isActive      Boolean     @default(true) @map("is_active")
+  sku           String?     @db.VarChar(50)
+  orderItems    OrderItem[]
+
+  @@map("products")
+}
+
+model Setting {
+  key   String @id @db.VarChar(50)
+  value String @db.VarChar(255)
+
+  @@map("settings")
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  preparing
+  ready
+  completed
+  cancelled
+
+  @@map("order_status_enum")
+}
+
+enum OrderType {
+  pickup
+  delivery
+
+  @@map("order_type_enum")
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+
+  @@map("payment_status_enum")
+}
+
+model Order {
+  id               Int           @id @default(autoincrement())
+  userId           Int?          @map("user_id")
+  user             User?         @relation(fields: [userId], references: [id])
+  status           OrderStatus
+  orderType        OrderType     @map("order_type")
+  subtotalCents    Int           @map("subtotal_cents")
+  deliveryFeeCents Int           @map("delivery_fee_cents")
+  totalCents       Int           @map("total_cents")
+  paymentStatus    PaymentStatus @default(pending) @map("payment_status")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  notes            String?       @db.Text
+  items            OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id                   Int     @id @default(autoincrement())
+  orderId              Int     @map("order_id")
+  order                Order   @relation(fields: [orderId], references: [id])
+  productId            Int     @map("product_id")
+  product              Product @relation(fields: [productId], references: [id])
+  quantity             Int
+  priceAtPurchaseCents Int     @map("price_at_purchase_cents")
+
+  @@map("order_items")
+}
