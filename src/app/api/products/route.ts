@@ -64,8 +64,9 @@ export async function POST(request: Request) {
     const priceCents = formData.get("price_cents");
     const categoryId = formData.get("category_id");
     const imageFile = formData.get("image");
+    const stockQuantity = formData.get("stock_quantity");
 
-    if (!name || !priceCents || !categoryId || !imageFile) {
+    if (!name || !priceCents || !categoryId || !imageFile || !stockQuantity) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -74,9 +75,9 @@ export async function POST(request: Request) {
 
     // Save to DB
     await sql`
-      INSERT INTO products (name, price_cents, category_id, image_url, is_active)
-      VALUES (${name}, ${Math.round(parseFloat(priceCents as string) * 100)}, ${categoryId}, ${imageUrl}, true)
-    `;
+  INSERT INTO products (name, price_cents, category_id, image_url, is_active, stock_quantity)
+  VALUES (${name}, ${Math.round(parseFloat(priceCents as string) * 100)}, ${categoryId}, ${imageUrl}, true, ${stockQuantity})
+`;
 
     return Response.json({ success: true, imageUrl });
   } catch (error) {

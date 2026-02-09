@@ -12,6 +12,7 @@ export default function AddProductPage() {
     price_cents: "",
     category_id: "",
     description: "",
+    stock_quantity: "10", // ADDED: Default stock quantity
   });
   
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -39,6 +40,7 @@ export default function AddProductPage() {
       dataToSend.append("name", formData.name);
       dataToSend.append("price_cents", formData.price_cents);
       dataToSend.append("category_id", formData.category_id);
+      dataToSend.append("stock_quantity", formData.stock_quantity); // ADDED: Send stock
       if (imageFile) dataToSend.append("image", imageFile);
 
       const response = await fetch("/api/products", {
@@ -126,8 +128,8 @@ export default function AddProductPage() {
             />
           </div>
 
-          {/* Price and Category Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Price, Category and Stock Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-black dark:text-white font-inter">
                 Price (LSL)
@@ -160,6 +162,23 @@ export default function AddProductPage() {
                 <option value="2">Drinks</option>
               </select>
             </div>
+
+            {/* --- NEW STOCK FIELD --- */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-black dark:text-white font-inter">
+                Stock Qty
+              </label>
+              <input
+                type="number"
+                name="stock_quantity"
+                value={formData.stock_quantity}
+                onChange={handleChange}
+                placeholder="10"
+                className="w-full h-12 px-4 rounded-lg bg-[#F5F5F5] dark:bg-[#262626] border border-[#E5E5E5] dark:border-[#404040] text-black dark:text-white placeholder-[#6E6E6E] dark:placeholder-[#888888] font-inter text-sm focus:outline-none focus:border-black dark:focus:border-white transition-colors"
+                required
+              />
+            </div>
+            {/* ----------------------- */}
           </div>
 
           {/* Submit Button */}

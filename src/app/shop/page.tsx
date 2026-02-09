@@ -214,12 +214,25 @@ export default function ShopPage() {
                 <p className="text-lg md:text-xl font-bold text-black dark:text-white mb-3 font-sora">
                   {formatPrice(product.price_cents)}
                 </p>
-                <button
-                  onClick={() => addToCart(product)}
-                  className="w-full py-2.5 rounded-full bg-gradient-to-b from-[#252525] to-[#0F0F0F] dark:from-[#FFFFFF] dark:to-[#E0E0E0] text-white dark:text-black font-semibold text-sm transition-all duration-150 hover:from-[#2d2d2d] hover:to-[#171717] dark:hover:from-[#F0F0F0] dark:hover:to-[#D0D0D0] active:scale-95 font-inter"
-                >
-                  Add to Cart
-                </button>
+                
+                {/* --- STOCK LOGIC START --- */}
+                {product.stock_quantity > 0 ? (
+                  <button
+                    onClick={() => addToCart(product)}
+                    className="w-full py-2.5 rounded-full bg-gradient-to-b from-[#252525] to-[#0F0F0F] dark:from-[#FFFFFF] dark:to-[#E0E0E0] text-white dark:text-black font-semibold text-sm transition-all duration-150 hover:from-[#2d2d2d] hover:to-[#171717] dark:hover:from-[#F0F0F0] dark:hover:to-[#D0D0D0] active:scale-95 font-inter"
+                  >
+                    Add to Cart
+                  </button>
+                ) : (
+                  <button
+                    disabled
+                    className="w-full py-2.5 rounded-full bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-semibold text-sm font-inter cursor-not-allowed"
+                  >
+                    Out of Stock
+                  </button>
+                )}
+                {/* --- STOCK LOGIC END --- */}
+
               </div>
             </div>
           ))}
