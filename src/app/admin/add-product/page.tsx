@@ -151,7 +151,7 @@ export default function AddProductPage() {
               <select
                 name="category_id"
                 value={formData.category_id}
-                onChange={handleChange}
+                onChange={(e) => handleChange(e as any)}
                 className="w-full h-12 px-4 rounded-lg bg-[#F5F5F5] dark:bg-[#262626] border border-[#E5E5E5] dark:border-[#404040] text-black dark:text-white placeholder-[#6E6E6E] dark:placeholder-[#888888] font-inter text-sm focus:outline-none focus:border-black dark:focus:border-white transition-colors"
                 required
               >
