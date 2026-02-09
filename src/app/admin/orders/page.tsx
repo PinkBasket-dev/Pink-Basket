@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft } from "lucide-react"; // Import the Arrow
+import Link from "next/link"; // Import Link
 
 export default function AdminOrdersPage() {
   const queryClient = useQueryClient();
@@ -14,7 +16,7 @@ export default function AdminOrdersPage() {
       if (!response.ok) throw new Error("Failed to fetch");
       return response.json();
     },
-    refetchOnMount: true, // Refresh when you open the page
+    refetchOnMount: true,
   });
 
   // 2. Update Status Mutation
@@ -28,7 +30,7 @@ export default function AdminOrdersPage() {
       if (!res.ok) throw new Error("Failed to update");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-orders"] }); // Reload table
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
     },
   });
 
@@ -39,14 +41,27 @@ export default function AdminOrdersPage() {
   return (
     <div className="min-h-screen bg-[#F3F3F3] dark:bg-[#0A0A0A] p-8">
       <div className="max-w-5xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-black dark:text-white font-sora">
-            Order History
-          </h1>
+        
+        {/* --- UPDATED HEADER SECTION --- */}
+        <div className="flex items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            {/* Back Button */}
+            <Link href="/admin" className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors">
+              <ArrowLeft size={20} className="text-black dark:text-white" />
+            </Link>
+            
+            {/* Title */}
+            <h1 className="text-3xl font-bold text-black dark:text-white font-sora">
+              Order History
+            </h1>
+          </div>
+
+          {/* Total Badge */}
           <span className="text-sm text-[#6E6E6E] dark:text-[#888888] font-inter bg-white dark:bg-[#1E1E1E] px-3 py-1 rounded border border-[#E6E6E6] dark:border-[#333333]">
             Total Orders: {ordersData?.orders.length || 0}
           </span>
         </div>
+        {/* ----------------------------------- */}
 
         {ordersData?.orders.length === 0 ? (
           <div className="bg-white dark:bg-[#1E1E1E] rounded-xl p-12 text-center border border-[#E6E6E6] dark:border-[#333333]">
@@ -69,7 +84,6 @@ export default function AdminOrdersPage() {
 function OrderCard({ order, onUpdate, formatPrice }: any) {
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // Color code status
   const statusColors: any = {
     pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
     paid: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",

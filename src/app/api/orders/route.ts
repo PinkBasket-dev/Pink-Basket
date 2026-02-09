@@ -1,6 +1,6 @@
 import sql from "../../../utils/sql";
 
-// 1. Create Order (Existing)
+// 1. Create Order (This is what the Shop uses)
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   }
 }
 
-// 2. Get All Orders (NEW)
+// 2. Get All Orders (This is what your Admin Dashboard uses)
 export async function GET() {
   try {
     const orders = await sql`
@@ -36,7 +36,7 @@ export async function GET() {
   }
 }
 
-// 3. Update Order Status (NEW)
+// 3. Update Order Status (This is what the Admin Dropdown uses)
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
