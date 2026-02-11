@@ -1,11 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Package, AlertTriangle, Search, ArrowUp, ArrowDown, Edit } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Package, AlertTriangle, Search, Trash2, ArrowLeft, Edit } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 export default function InventoryPage() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
 
   // Fetch all products
@@ -32,16 +33,81 @@ export default function InventoryPage() {
     return { label: "In Stock", color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" };
   };
 
+  // --- FUNCTION 1: Handle Delete ---
+  const handleDelete = async (productId: number, productName: string) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to discontinue "${productName}"?\n\nThis will remove it from the shop, but keep it in your sales history.`
+    );
+
+    if (confirmDelete) {
+      try {
+        const response = await fetch(`/api/products/${productId}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          queryClient.invalidateQueries({ queryKey: ["products-all"] });
+          alert("Product discontinued.");
+        } else {
+          alert("Failed to discontinue product.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("An error occurred.");
+      }
+    }
+  };
+
+  // --- FUNCTION 2: Handle Quick Restock ---
+  const handleQuickRestock = async (productId: number, currentStock: number) => {
+    const input = prompt(`Current stock: ${currentStock}\nEnter new quantity to update inventory:`);
+
+    if (input !== null && input.trim() !== "") {
+      const newStock = parseInt(input);
+      if (isNaN(newStock) || newStock < 0) {
+        alert("Please enter a valid number.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/products/${productId}/stock`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ stock_quantity: newStock }),
+        });
+
+        if (response.ok) {
+          queryClient.invalidateQueries({ queryKey: ["products-all"] });
+        } else {
+          alert("Failed to update stock.");
+        }
+      } catch (error) {
+        console.error(error);
+        alert("An error occurred.");
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F3F3F3] dark:bg-[#0A0A0A] p-8">
       <div className="max-w-7xl mx-auto">
         
-        {/* Header */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold font-sora text-black dark:text-white">Inventory</h1>
-            <p className="text-[#666] dark:text-[#888]">Manage stock levels and product codes.</p>
+       {/* Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+             {/* Back Button */}
+            <Link href="/admin" className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors">
+              <ArrowLeft size={20} className="text-black dark:text-white" />
+            </Link>
+
+            {/* Title */}
+            <div>
+              <h1 className="text-3xl font-bold font-sora text-black dark:text-white">Inventory</h1>
+              <p className="text-[#666] dark:text-[#888]">Manage stock levels and product codes.</p>
+            </div>
           </div>
+
+          {/* Add Product Button */}
           <Link 
             href="/admin/add-product" 
             className="px-6 py-3 rounded-full bg-black dark:bg-white text-white dark:text-black font-semibold hover:opacity-90 transition-opacity text-sm"
@@ -129,9 +195,39 @@ export default function InventoryPage() {
                           </span>
                         </td>
                         <td className="p-4 text-right">
-                           <button className="text-blue-600 hover:text-blue-800 font-medium text-sm">
-                            Quick Edit {/* We can add edit logic later */}
-                           </button>
+                          <div className="flex items-center justify-end gap-2">
+    
+                            {/* Edit Button */}
+                            <Link 
+                              href={`/admin/edit-product/${product.id}`} 
+                              className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+                              title="Edit Product"
+                            >
+                              <Edit size={16} />
+                            </Link>
+
+                            <div className="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
+
+                            {/* Restock Button */}
+                            <button 
+                              onClick={() => handleQuickRestock(product.id, product.stock_quantity)}
+                              className="text-blue-600 hover:text-blue-800 font-medium text-sm hover:underline"
+                              title="Quick Restock"
+                            >
+                              <Package size={16} /> {/* Using Package icon for restock to save space, or keep text "Restock" */}
+                            </button>
+                            
+                            <div className="w-px h-4 bg-gray-300 dark:bg-gray-700"></div>
+                            
+                            {/* Delete Button */}
+                            <button   
+                              onClick={() => handleDelete(product.id, product.name)}
+                              className="text-red-500 hover:text-red-700"
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

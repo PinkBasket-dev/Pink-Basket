@@ -1,18 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Upload, ArrowLeft, Save } from "lucide-react";
 
 export default function AddProductPage() {
   const router = useRouter();
   
+  // --- FETCH CATEGORIES ---
+  const { data: categoriesData, isLoading: isCategoriesLoading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await fetch("/api/categories");
+      const data = await res.json();
+      return data.categories || [];
+    },
+  });
+  // ----------------------
+
   const [formData, setFormData] = useState({
     name: "",
     price_cents: "",
     category_id: "",
     description: "",
-    stock_quantity: "10", // ADDED: Default stock quantity
+    stock_quantity: "10", // Default stock
   });
   
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -40,7 +52,7 @@ export default function AddProductPage() {
       dataToSend.append("name", formData.name);
       dataToSend.append("price_cents", formData.price_cents);
       dataToSend.append("category_id", formData.category_id);
-      dataToSend.append("stock_quantity", formData.stock_quantity); // ADDED: Send stock
+      dataToSend.append("stock_quantity", formData.stock_quantity);
       if (imageFile) dataToSend.append("image", imageFile);
 
       const response = await fetch("/api/products", {
@@ -148,7 +160,7 @@ export default function AddProductPage() {
             
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-black dark:text-white font-inter">
-                Category ID
+                Category
               </label>
               <select
                 name="category_id"
@@ -158,12 +170,18 @@ export default function AddProductPage() {
                 required
               >
                 <option value="">Select Category</option>
-                <option value="1">Snacks</option>
-                <option value="2">Drinks</option>
+                {isCategoriesLoading ? (
+                  <option disabled>Loading categories...</option>
+                ) : (
+                  categoriesData?.map((cat: any) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
-            {/* --- NEW STOCK FIELD --- */}
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-black dark:text-white font-inter">
                 Stock Qty
@@ -178,7 +196,6 @@ export default function AddProductPage() {
                 required
               />
             </div>
-            {/* ----------------------- */}
           </div>
 
           {/* Submit Button */}

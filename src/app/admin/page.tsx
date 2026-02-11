@@ -118,6 +118,24 @@ export default function AdminDashboard() {
               </p>
             </div>
           </Link>
+          
+          {/* Inventory Card */}
+          <Link href="/admin/inventory" className="group">
+           <div className="bg-white dark:bg-[#1E1E1E] p-6 rounded-2xl border border-[#E6E6E6] dark:border-[#333333] shadow-sm hover:shadow-md transition-all duration-200 h-full">
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full text-orange-600 dark:text-orange-400">
+                 <Package size={24} />
+                </div>
+                <span className="text-2xl opacity-0 group-hover:opacity-100 transition-opacity text-gray-400">→</span>
+              </div>
+              <h2 className="text-xl font-bold text-black dark:text-white mb-2 font-sora">
+                Inventory
+              </h2>
+              <p className="text-sm text-[#666] dark:text-[#888]">
+                Manage stock, SKUs, and reordering.
+              </p>
+            </div>
+          </Link>
         
         </div>
       </div>

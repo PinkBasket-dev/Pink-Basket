@@ -41,32 +41,44 @@ export default function CheckoutPage() {
   };
 
   // 4. Handle Place Order
-  const handlePlaceOrder = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsProcessing(true);
+  const handlePlaceOrder = async () => {
+    // Keep your existing validation logic (customer_name, etc.)
+    // If your old code uses `formData`, keep that.
+    // If it uses `name`, `phone`, `address` state, keep that.
+    
+    // Here is the important part:
+    setIsProcessing(true); // Or whatever your loading state is named
 
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          customer_name: formData.fullName,
-          phone: formData.phone,
-          address: formData.address,
+          // Keep your existing body fields
+          fullName: formData.fullName, // or name 
+          phone: formData.phone, // or phone
+          address: formData.address, // or address
           total_cents: cartTotal,
           items: cart,
         }),
       });
 
-      if (!response.ok) throw new Error("Failed to place order");
+      // --- ADD THIS FIX ---
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error || "Failed to place order");
+        setIsProcessing(false); // Stop loading state
+        return;
+      }
+      // --------------------
 
-      // Success!
-      localStorage.removeItem("cart");
-      router.push("/shop/success");
+      // Your existing success code (redirect to success page)
+      localStorage.setItem("cart", JSON.stringify(cart));
+      window.location.href = "/shop/success";
+
     } catch (error) {
-      console.error("Error placing order:", error);
-      alert("Error placing order. Please try again.");
-    } finally {
+      console.error(error);
+      alert("An error occurred");
       setIsProcessing(false);
     }
   };
