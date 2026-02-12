@@ -5,18 +5,24 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, MapPin, Phone, User, CreditCard } from "lucide-react";
 
 export default function CheckoutPage() {
-  // function CheckoutPage() { 
   const router = useRouter();
+  
+  // --- 1. State ---
   const [cart, setCart] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Payment State (NEW)
+  const [paymentMethod, setPaymentMethod] = useState("COD");
+  const [transactionId, setTransactionId] = useState("");
+  const [showBankDetails, setShowBankDetails] = useState(false);
+
   const [formData, setFormData] = useState({
-    fullName: "",
+    customer_name: "",
     phone: "",
     address: "",
   });
 
-  // 1. Calculate Totals 
+  // 2. Calculate Totals
   const cartTotal = cart.reduce(
     (sum, item) => sum + item.price_cents * item.quantity,
     0
@@ -24,7 +30,7 @@ export default function CheckoutPage() {
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const formatPrice = (cents: number) => `LSL ${(cents / 100).toFixed(2)}`;
 
-  // 2. Load Cart
+  // 3. Load Cart
   useEffect(() => {
     const savedCart = localStorage.getItem("cart");
     if (savedCart) {
@@ -34,45 +40,58 @@ export default function CheckoutPage() {
     }
   }, [router]);
 
-  // 3. Handle Inputs
+  // 4. Handle Inputs
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 4. Handle Place Order
+  // 5. Handle Place Order (UPDATED)
   const handlePlaceOrder = async () => {
-    // Keep your existing validation logic (customer_name, etc.)
-    // If your old code uses `formData`, keep that.
-    // If it uses `name`, `phone`, `address` state, keep that.
-    
-    // Here is the important part:
-    setIsProcessing(true); // Or whatever your loading state is named
+    // Validation
+    if (!formData.customer_name || !formData.phone || !formData.address) {
+      alert("Please fill in all delivery details.");
+      return;
+    }
+
+    if (cart.length === 0) {
+      alert("Your cart is empty.");
+      return;
+    }
+
+    // Validation for M-Pesa
+    if (paymentMethod === "M-Pesa" && !transactionId) {
+      alert("Please enter the M-Pesa Transaction ID.");
+      return;
+    }
+
+    setIsProcessing(true);
 
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          // Keep your existing body fields
-          fullName: formData.fullName, // or name 
-          phone: formData.phone, // or phone
-          address: formData.address, // or address
+          customer_name: formData.customer_name,
+          phone: formData.phone,
+          address: formData.address,
           total_cents: cartTotal,
           items: cart,
+          payment_method: paymentMethod, // NEW
+          transaction_id: transactionId,   // NEW
         }),
       });
 
-      // --- ADD THIS FIX ---
+      // --- FIX: Handle 400 Errors (Out of Stock) ---
       if (!response.ok) {
         const errorData = await response.json();
         alert(errorData.error || "Failed to place order");
-        setIsProcessing(false); // Stop loading state
+        setIsProcessing(false);
         return;
       }
-      // --------------------
+      // ----------------------------------------------
 
-      // Your existing success code (redirect to success page)
+      // If successful
       localStorage.setItem("cart", JSON.stringify(cart));
       window.location.href = "/shop/success";
 
@@ -83,7 +102,6 @@ export default function CheckoutPage() {
     }
   };
 
-  // --- return ---
   return (
     <div className="min-h-screen bg-[#F3F3F3] dark:bg-[#0A0A0A]">
       {/* Header */}
@@ -111,19 +129,19 @@ export default function CheckoutPage() {
               Delivery Information
             </h2>
 
-            <form onSubmit={handlePlaceOrder} className="space-y-4">
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-[#6E6E6E] dark:text-[#888888] mb-1 font-inter">
-                  Full Name
+                  Customer Name
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888888] dark:text-[#666666]" size={18} />
                   <input
                     type="text"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleChange}
+                    name="customer_name"
+                    value={formData.customer_name}  
+                    onChange={handleChange} 
                     placeholder="John Doe"
                     className="w-full h-11 pl-10 pr-4 rounded-lg bg-[#F5F5F5] dark:bg-[#262626] border border-[#E5E5E5] dark:border-[#404040] text-black dark:text-white placeholder-[#6E6E6E] dark:placeholder-[#888888] font-inter text-sm focus:outline-none focus:border-black dark:focus:border-white"
                     required
@@ -206,6 +224,86 @@ export default function CheckoutPage() {
                 </span>
               </div>
 
+              {/* Payment Method Section */}
+              <div className="space-y-4 mb-6">
+                <h3 className="text-lg font-bold text-black dark:text-white font-sora">Payment Method</h3>
+        
+                <div className="space-y-3">
+                  {/* Cash on Delivery */}
+                  <label className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-colors ${paymentMethod === "COD" ? "border-black dark:border-white bg-gray-50 dark:bg-[#2A2A2A]" : "border-[#E6E6E6] dark:border-[#333333]"}`}>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="payment"
+                        value="COD"
+                        checked={paymentMethod === "COD"}
+                        onChange={() => setPaymentMethod("COD")}
+                        className="w-5 h-5"
+                      />
+                      <span className="font-medium text-black dark:text-white">Cash on Delivery</span>
+                    </div>
+                  </label>
+
+                  {/* Bank Transfer */}
+                  <label className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-colors ${paymentMethod === "Bank" ? "border-black dark:border-white bg-gray-50 dark:bg-[#2A2A2A]" : "border-[#E6E6E6] dark:border-[#333333]"}`}>
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="payment"
+                          value="Bank"
+                          checked={paymentMethod === "Bank"}
+                          onChange={() => { setPaymentMethod("Bank"); setShowBankDetails(true); }}
+                          className="w-5 h-5"
+                        />
+                        <span className="font-medium text-black dark:text-white">Bank Transfer (EFT)</span>
+                      </div>
+                    </div>
+                  </label>
+
+                  {showBankDetails && (
+                    <div className="p-4 bg-[#F5F5F5] dark:bg-[#262626] rounded-xl text-sm text-[#666] dark:text-[#888] ml-8">
+                      <p className="font-bold text-black dark:text-white mb-2">Bank Details:</p>
+                      <p>Bank: Standard Lesotho Bank</p>
+                      <p>Account Name: Pink Basket (Pty) Ltd</p>
+                      <p>Account Number: 1234567890</p>
+                      <p>Reference: Your Order ID</p>
+                    </div>
+                  )}
+
+                  {/* M-Pesa */}
+                  <label className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-colors ${paymentMethod === "M-Pesa" ? "border-black dark:border-white bg-gray-50 dark:bg-[#2A2A2A]" : "border-[#E6E6E6] dark:border-[#333333]"}`}>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="payment"
+                        value="M-Pesa"
+                        checked={paymentMethod === "M-Pesa"}
+                        onChange={() => setPaymentMethod("M-Pesa")}
+                        className="w-5 h-5"
+                      />
+                      <span className="font-medium text-black dark:text-white">M-Pesa</span>
+                    </div>
+                  </label>
+
+                  {paymentMethod === "M-Pesa" && (
+                    <div className="mt-3 ml-8">
+                      <input
+                        type="text"
+                        placeholder="Enter M-Pesa Transaction ID (Phone Number)"
+                        value={transactionId}
+                        onChange={(e) => setTransactionId(e.target.value)}
+                        className="w-full h-12 px-4 rounded-lg bg-white dark:bg-[#1E1E1E] border border-[#E6E6E6] dark:border-[#333333] text-black dark:text-white"
+                      />
+                      <p className="text-xs text-[#666] dark:text-[#888] mt-1">
+                        Please transfer the total amount and enter the Transaction ID for verification.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Place Order Button */}
               <button
                 onClick={handlePlaceOrder}
                 disabled={isProcessing}
@@ -214,6 +312,7 @@ export default function CheckoutPage() {
                 <CreditCard size={18} />
                 {isProcessing ? "Processing..." : "Place Order"}
               </button>
+
             </div>
           </div>
         </div>

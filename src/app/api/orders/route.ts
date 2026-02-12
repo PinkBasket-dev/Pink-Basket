@@ -39,9 +39,9 @@ export async function PUT(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { fullName, phone, address, total_cents, items } = body;
+    const { customer_name, phone, address, total_cents, items } = body;
 
-    if (!fullName || !phone || !address || !items) {
+    if (!customer_name || !phone || !address || !items) {
       return Response.json({ error: "Missing fields" }, { status: 400 });
     }
 
@@ -69,8 +69,8 @@ export async function POST(request: Request) {
 
     // 2. If stock was deducted successfully, Create the Order
     const result = await sql`
-      INSERT INTO orders (fullName, phone, address, total_cents, items)
-      VALUES (${fullName}, ${phone}, ${address}, ${total_cents}, ${JSON.stringify(items)})
+      INSERT INTO orders (customer_name, phone, address, total_cents, items)
+      VALUES (${customer_name}, ${phone}, ${address}, ${total_cents}, ${JSON.stringify(items)})  
       RETURNING id
     `;
 
