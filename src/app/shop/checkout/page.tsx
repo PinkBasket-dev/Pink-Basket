@@ -1,5 +1,6 @@
 "use client";
 
+import Recommendations from "@/components/Recommendations";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, MapPin, Phone, User, CreditCard } from "lucide-react";
@@ -11,6 +12,21 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
+    // Helper to add recommended items
+  const addToCart = (product: any) => {
+    const newCart = [...cart];
+    const existing = newCart.find((item) => item.id === product.id);
+    
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      newCart.push({ ...product, quantity: 1 });
+    }
+    
+    setCart(newCart);
+    localStorage.setItem("cart", JSON.stringify(newCart));
+  };
+
   // Payment State (NEW)
   const [paymentMethod, setPaymentMethod] = useState("COD");
   const [transactionId, setTransactionId] = useState("");
@@ -18,6 +34,7 @@ export default function CheckoutPage() {
 
   const [formData, setFormData] = useState({
     customer_name: "",
+    email: "",
     phone: "",
     address: "",
   });
@@ -46,10 +63,10 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 5. Handle Place Order (UPDATED)
+  // 5. Handle Place Order (CORRECTED)
   const handlePlaceOrder = async () => {
     // Validation
-    if (!formData.customer_name || !formData.phone || !formData.address) {
+    if (!formData.customer_name || !formData.email || !formData.phone || !formData.address) {
       alert("Please fill in all delivery details.");
       return;
     }
@@ -59,48 +76,54 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Validation for M-Pesa
-    if (paymentMethod === "M-Pesa" && !transactionId) {
-      alert("Please enter the M-Pesa Transaction ID.");
-      return;
+     if (paymentMethod === "M-Pesa" && !transactionId) {
+       alert("Please enter the M-Pesa Transaction ID.");
+       return;
     }
 
-    setIsProcessing(true);
+     setIsProcessing(true);
 
-    try {
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer_name: formData.customer_name,
-          phone: formData.phone,
-          address: formData.address,
-          total_cents: cartTotal,
-          items: cart,
-          payment_method: paymentMethod, // NEW
-          transaction_id: transactionId,   // NEW
-        }),
-      });
+     try {
+       // --- DEFINE RESPONSE HERE ---
+    const response = await fetch("/api/orders", {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({
+           customer_name: formData.customer_name,
+           email: formData.email, // Ensure email is sent
+           phone: formData.phone,
+           address: formData.address,
+           total_cents: cartTotal,
+           items: cart,
+           payment_method: paymentMethod, 
+           transaction_id: transactionId,   
+         }),
+       });
 
-      // --- FIX: Handle 400 Errors (Out of Stock) ---
+      // --- Handle Errors ---
       if (!response.ok) {
         const errorData = await response.json();
         alert(errorData.error || "Failed to place order");
         setIsProcessing(false);
         return;
-      }
-      // ----------------------------------------------
-
-      // If successful
-      localStorage.setItem("cart", JSON.stringify(cart));
-      window.location.href = "/shop/success";
-
-    } catch (error) {
-      console.error(error);
-      alert("An error occurred");
-      setIsProcessing(false);
     }
-  };
+
+    // --- Success: Get Order ID ---
+    const result = await response.json(); 
+    
+    if (result.success) {
+      // API handles the email now, so we just clear and redirect
+      setCart([]);
+      localStorage.removeItem("cart");
+      window.location.href = "/shop/success";
+      }
+
+  } catch (error) {
+    console.error(error);
+    alert("An error occurred");
+    setIsProcessing(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#F3F3F3] dark:bg-[#0A0A0A]">
@@ -149,8 +172,26 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {/* Email */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-[#6E6E6E] dark:text-[#888888] mb-1 font-inter">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="john@example.com"
+                    className="w-full h-11 pl-4 pr-4 rounded-lg bg-[#F5F5F5] dark:bg-[#262626] border border-[#E5E5E5] dark:border-[#404040] text-black dark:text-white placeholder-[#6E6E6E] dark:placeholder-[#888888] font-inter text-sm focus:outline-none focus:border-black dark:focus:border-white"
+                    required
+                  />
+                </div>
+              </div>
+
               {/* Phone */}
-              <div>
+              <div className="mt-4">
                 <label className="block text-sm font-medium text-[#6E6E6E] dark:text-[#888888] mb-1 font-inter">
                   Phone Number
                 </label>
@@ -184,6 +225,7 @@ export default function CheckoutPage() {
               </div>
             </form>
           </div>
+          <Recommendations currentCart={cart} onAdd={addToCart} />
         </div>
 
         {/* RIGHT: Order Summary */}
