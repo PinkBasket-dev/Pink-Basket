@@ -2,13 +2,28 @@ import sql from "../../../utils/sql";
 import { sendOrderConfirmation } from "../../../lib/email"; // Import new function
 import { NextResponse } from "next/server";
 
-// 1. GET: Fetch All Orders (Unchanged)
-export async function GET() {
+// 1. GET: Fetch All Orders OR Single Order
+export async function GET(request: Request) {
   try {
-    const orders = await sql`
-      SELECT * FROM orders ORDER BY created_at DESC
-    `;
-    return Response.json({ orders });
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (id) {
+      // Fetch Single Order
+      const order = await sql`
+        SELECT * FROM orders WHERE id = ${id}
+      `;
+      if (order.length === 0) {
+        return Response.json({ error: "Order not found" }, { status: 404 });
+      }
+      return Response.json({ order: order[0] });
+    } else {
+      // Fetch All Orders (Default Admin behavior)
+      const orders = await sql`
+        SELECT * FROM orders ORDER BY created_at DESC
+      `;
+      return Response.json({ orders });
+    }
   } catch (error) {
     return Response.json({ error: "Failed to fetch orders" }, { status: 500 });
   }

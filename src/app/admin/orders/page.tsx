@@ -83,32 +83,53 @@ export default function AdminOrdersPage() {
 
 function OrderCard({ order, onUpdate, formatPrice }: any) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+  const [status, setStatus] = useState(order.status);
+
   const statusColors: any = {
     pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
-    paid: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
+    processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100",
+    shipped: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100",
     delivered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = e.target.value;
+    setStatus(newStatus);
+    onUpdate({ id: order.id, status: newStatus });
   };
 
   return (
     <div className="bg-white dark:bg-[#1E1E1E] rounded-xl border border-[#E6E6E6] dark:border-[#333333] overflow-hidden shadow-sm transition-all hover:shadow-md">
       {/* Header */}
-      <div className="p-4 border-b border-[#E6E6E6] dark:border-[#333333] flex justify-between items-start">
+      <div className="p-4 border-b border-[#E6E6E6] dark:border-[#333333] flex flex-col md:flex-row md:justify-between md:items-start gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="font-bold text-black dark:text-white font-sora">{order.customer_name}</h3>
-            <span className={`text-xs px-2 py-0.5 rounded font-bold font-inter uppercase ${statusColors[order.status] || statusColors.pending}`}>
-              {order.status}
+            <span className={`text-xs px-2 py-0.5 rounded font-bold font-inter uppercase ${statusColors[status] || statusColors.pending}`}>
+              {status}
             </span>
           </div>
           <p className="text-sm text-[#6E6E6E] dark:text-[#888888] font-inter">
             {order.phone} • {new Date(order.created_at).toLocaleDateString()}
           </p>
         </div>
-        <div className="text-right">
+        <div className="flex flex-col md:items-end gap-2 w-full md:w-auto">
           <p className="text-xl font-bold text-black dark:text-white font-sora">
             {formatPrice(order.total_cents)}
           </p>
+          
+          {/* --- NEW: STATUS SELECTOR --- */}
+          <select
+            value={status}
+            onChange={handleStatusChange}
+            className="text-xs border border-[#E6E6E6] dark:border-[#333333] rounded-md px-2 py-1 bg-white dark:bg-[#262626] text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 w-full md:w-auto"
+          >
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+          </select>
+          {/* ----------------------------- */}
         </div>
       </div>
 
@@ -142,17 +163,6 @@ function OrderCard({ order, onUpdate, formatPrice }: any) {
         >
           {isExpanded ? "Hide Details" : "View Details"}
         </button>
-        
-        <div className="flex gap-2">
-          {order.status !== 'delivered' && (
-            <button
-              onClick={() => onUpdate({ id: order.id, status: 'delivered' })}
-              className="px-3 py-1 text-xs rounded bg-green-600 hover:bg-green-700 text-white font-inter font-bold"
-            >
-              Mark Delivered
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );

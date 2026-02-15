@@ -81,11 +81,34 @@ export default function InvoiceEmail({ orderDetails }: { orderDetails: OrderDeta
             </div>
           </Section>
 
-          {/* Button */}
+                    {/* Button Container */}
           <Section style={buttonContainer}>
-            <Button style={button} href="https://pinkbasket.store/shop">
+            
+            {/* 1. TRACK ORDER BUTTON (Primary Action) */}
+            <Button 
+              style={{ 
+                ...button, 
+                backgroundColor: "#ec4899", // Pink
+                marginBottom: "12px"       // Spacing between buttons
+              }} 
+              href={`https://pinkbasket.store/track-order?id=${orderId}`}
+            >
+              Track Your Order
+            </Button>
+
+            {/* 2. CONTINUE SHOPPING BUTTON (Secondary Action) */}
+            <Button 
+              style={{ 
+                ...button, 
+                backgroundColor: "#ffffff", // White background
+                color: "#ec4899",          // Pink text
+                border: "1px solid #ec4899" // Pink border
+              }} 
+              href="https://pinkbasket.store/shop"
+            >
               Continue Shopping
             </Button>
+
           </Section>
 
           {/* Footer */}

@@ -3,7 +3,7 @@
 import Recommendations from "@/components/Recommendations";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MapPin, Phone, User, CreditCard } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, User, CreditCard, Trash2 } from "lucide-react";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -12,7 +12,14 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-    // Helper to add recommended items
+    // Helper to remove items from cart
+  const removeFromCart = (id: number) => {
+    const newCart = cart.filter((item) => item.id !== id);
+    setCart(newCart);
+    localStorage.setItem("cart", JSON.stringify(newCart));
+  };
+
+  // Helper to add recommended items
   const addToCart = (product: any) => {
     const newCart = [...cart];
     const existing = newCart.find((item) => item.id === product.id);
@@ -235,15 +242,15 @@ export default function CheckoutPage() {
               Order Summary ({itemCount} items)
             </h2>
 
-            <div className="space-y-3 max-h-64 overflow-y-auto mb-6 pr-2">
+                        <div className="space-y-3 max-h-64 overflow-y-auto mb-6 pr-2">
               {cart.map((item) => (
-                <div key={item.id} className="flex gap-3 items-start">
+                <div key={item.id} className="flex gap-3 items-start group">
                   <img
                     src={item.image_url}
                     alt={item.name}
                     className="w-16 h-16 rounded-lg object-cover bg-[#F5F5F5] dark:bg-[#262626]"
                   />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-semibold text-black dark:text-white line-clamp-1">
                       {item.name}
                     </h4>
@@ -252,6 +259,16 @@ export default function CheckoutPage() {
                       {formatPrice(item.price_cents * item.quantity)}
                     </p>
                   </div>
+                  
+                  {/* --- ADD THIS BUTTON --- */}
+                  <button
+                    onClick={() => removeFromCart(item.id)}
+                    className="text-[#9CA3AF] hover:text-red-500 transition-colors p-1"
+                    title="Remove item"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  {/* ---------------------- */}
                 </div>
               ))}
             </div>
