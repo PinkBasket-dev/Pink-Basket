@@ -12,29 +12,7 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
 
-    // Helper to remove items from cart
-  const removeFromCart = (id: number) => {
-    const newCart = cart.filter((item) => item.id !== id);
-    setCart(newCart);
-    localStorage.setItem("cart", JSON.stringify(newCart));
-  };
-
-  // Helper to add recommended items
-  const addToCart = (product: any) => {
-    const newCart = [...cart];
-    const existing = newCart.find((item) => item.id === product.id);
-    
-    if (existing) {
-      existing.quantity += 1;
-    } else {
-      newCart.push({ ...product, quantity: 1 });
-    }
-    
-    setCart(newCart);
-    localStorage.setItem("cart", JSON.stringify(newCart));
-  };
-
-  // Payment State (NEW)
+  // Payment State
   const [paymentMethod, setPaymentMethod] = useState("COD");
   const [transactionId, setTransactionId] = useState("");
   const [showBankDetails, setShowBankDetails] = useState(false);
@@ -44,6 +22,8 @@ export default function CheckoutPage() {
     email: "",
     phone: "",
     address: "",
+    customer_lat: null as number | null, 
+    customer_lng: null as number | null, 
   });
 
   // 2. Calculate Totals
@@ -70,7 +50,59 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // 5. Handle Place Order (CORRECTED)
+  // --- MOVED HERE: Handle Get Location ---
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setFormData((prev) => ({
+          ...prev,
+          customer_lat: latitude,
+          customer_lng: longitude,
+          address: prev.address 
+            ? `${prev.address} (GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
+            : `GPS: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`,
+        }));
+      },
+     (error) => {
+        alert("Unable to retrieve location. Please ensure location services are enabled.");
+      },
+      {
+        enableHighAccuracy: true, // <--- ADD THIS: Forces GPS hardware
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  // 5. Helper to remove items from cart
+  const removeFromCart = (id: number) => {
+    const newCart = cart.filter((item) => item.id !== id);
+    setCart(newCart);
+    localStorage.setItem("cart", JSON.stringify(newCart));
+  };
+
+  // 6. Helper to add recommended items
+  const addToCart = (product: any) => {
+    const newCart = [...cart];
+    const existing = newCart.find((item) => item.id === product.id);
+    
+    if (existing) {
+      existing.quantity += 1;
+    } else {
+      newCart.push({ ...product, quantity: 1 });
+    }
+    
+    setCart(newCart);
+    localStorage.setItem("cart", JSON.stringify(newCart));
+  };
+
+  // 7. Handle Place Order
   const handlePlaceOrder = async () => {
     // Validation
     if (!formData.customer_name || !formData.email || !formData.phone || !formData.address) {
@@ -91,15 +123,16 @@ export default function CheckoutPage() {
      setIsProcessing(true);
 
      try {
-       // --- DEFINE RESPONSE HERE ---
-    const response = await fetch("/api/orders", {
+       const response = await fetch("/api/orders", {
          method: "POST",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify({
            customer_name: formData.customer_name,
-           email: formData.email, // Ensure email is sent
+           email: formData.email, 
            phone: formData.phone,
            address: formData.address,
+           customer_lat: formData.customer_lat, 
+           customer_lng: formData.customer_lng, 
            total_cents: cartTotal,
            items: cart,
            payment_method: paymentMethod, 
@@ -113,7 +146,7 @@ export default function CheckoutPage() {
         alert(errorData.error || "Failed to place order");
         setIsProcessing(false);
         return;
-    }
+      }
 
     // --- Success: Get Order ID ---
     const result = await response.json(); 
@@ -229,6 +262,16 @@ export default function CheckoutPage() {
                   className="w-full p-3 rounded-lg bg-[#F5F5F5] dark:bg-[#262626] border border-[#E5E5E5] dark:border-[#404040] text-black dark:text-white placeholder-[#6E6E6E] dark:placeholder-[#888888] font-inter text-sm focus:outline-none focus:border-black dark:focus:border-white h-24 resize-none"
                   required
                 />
+                {/* --- LOCATE BUTTON --- */}
+                 <button
+                  type="button"
+                  onClick={handleGetLocation}
+                  className="mt-2 text-xs font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1 transition-colors"
+                >
+                  <MapPin size={14} />
+                  Use My Current Location
+                </button>
+                {/* ------------------------ */}
               </div>
             </form>
           </div>
@@ -260,7 +303,7 @@ export default function CheckoutPage() {
                     </p>
                   </div>
                   
-                  {/* --- ADD THIS BUTTON --- */}
+                  {/* Remove Button */}
                   <button
                     onClick={() => removeFromCart(item.id)}
                     className="text-[#9CA3AF] hover:text-red-500 transition-colors p-1"
@@ -268,7 +311,6 @@ export default function CheckoutPage() {
                   >
                     <Trash2 size={16} />
                   </button>
-                  {/* ---------------------- */}
                 </div>
               ))}
             </div>

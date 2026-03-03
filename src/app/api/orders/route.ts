@@ -29,23 +29,62 @@ export async function GET(request: Request) {
   }
 }
 
-// 2. PUT: Update Order Status (Unchanged)
+// 2. PUT: Update Order Status & Locations (Robust Version)
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, status } = body;
+    const { id, status, driver_lat, driver_lng, driver_name, driver_id } = body;
 
-    if (!id || !status) {
-      return Response.json({ error: "Missing id or status" }, { status: 400 });
+    if (!id) {
+      return Response.json({ error: "Missing id" }, { status: 400 });
     }
 
-    await sql`
-      UPDATE orders SET status = ${status} WHERE id = ${id}
-    `;
+    // 1. Update Status (if provided)
+    if (status) {
+      try {
+        await sql`UPDATE orders SET status = ${status} WHERE id = ${id}`;
+      } catch (err) {
+        console.error("Error updating status:", err);
+        return Response.json({ error: "Failed to update status column" }, { status: 500 });
+      }
+    }
+
+    // 2. Update Driver Location (if both lat and lng are provided)
+    if (driver_lat && driver_lng) {
+      try {
+        await sql`UPDATE orders SET driver_lat = ${driver_lat}, driver_lng = ${driver_lng} WHERE id = ${id}`;
+      } catch (err) {
+        console.error("Error updating location:", err);
+        // This is the most likely failure point if columns are missing
+        return Response.json({ error: "Failed to update location. Do columns driver_lat/lng exist?" }, { status: 500 });
+      }
+    }
+
+    // 3. Update Driver Name (if provided)
+    if (driver_name) {
+      try {
+        await sql`UPDATE orders SET driver_name = ${driver_name} WHERE id = ${id}`;
+      } catch (err) {
+        console.error("Error updating name:", err);
+        return Response.json({ error: "Failed to update name" }, { status: 500 });
+      }
+    }
+
+    // 4. Update Driver ID (if provided)
+    if (driver_id) {
+      try {
+        await sql`UPDATE orders SET driver_id = ${driver_id} WHERE id = ${id}`;
+      } catch (err) {
+        console.error("Error updating driver ID:", err);
+        return Response.json({ error: "Failed to update driver ID" }, { status: 500 });
+      }
+    }
 
     return Response.json({ success: true });
+
   } catch (error) {
-    return Response.json({ error: "Failed to update order" }, { status: 500 });
+    console.error("General PUT Error:", error);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -53,14 +92,14 @@ export async function PUT(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    // ADD 'email' to destructuring
-    const { customer_name, email, phone, address, total_cents, items, payment_method, transaction_id } = body;
+    // Destructure the new location fields
+    const { customer_name, email, phone, address, customer_lat, customer_lng, total_cents, items, payment_method, transaction_id } = body;
 
     if (!customer_name || !phone || !address || !items) {
       return Response.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    // 1. Validate Stock & Deduct Inventory (Your existing logic is perfect)
+    // 1. Validate Stock & Deduct Inventory
     for (const item of items) {
       const updateResult = await sql`
         UPDATE products
@@ -71,25 +110,22 @@ export async function POST(request: Request) {
 
       if (updateResult.length === 0) {
         return Response.json(
-          { error: `Insufficient stock for "${item.name}". Please reduce the quantity and try again.` },
+          { error: `Insufficient stock for "${item.name}".` },
           { status: 400 }
         );
       }
     }
 
-    // 2. Create the Order
-    // UPDATED: Added 'email' to the INSERT statement
+    // 2. Create the Order (Including Customer GPS)
     const result = await sql`
-      INSERT INTO orders (customer_name, email, phone, address, total_cents, items, payment_method, transaction_id)
-      VALUES (${customer_name}, ${email}, ${phone}, ${address}, ${total_cents}, ${JSON.stringify(items)}, ${payment_method}, ${transaction_id})
+      INSERT INTO orders (customer_name, email, phone, address, customer_lat, customer_lng, total_cents, items, payment_method, transaction_id)
+      VALUES (${customer_name}, ${email}, ${phone}, ${address}, ${customer_lat}, ${customer_lng}, ${total_cents}, ${JSON.stringify(items)}, ${payment_method}, ${transaction_id})
       RETURNING id
     `;
 
     if (result.length > 0) {
       const orderId = result[0].id;
-      
-      // 3. Send Email using the new function
-      // We pass the email directly from the form (Guest Checkout)
+      // Send email logic remains here...
       await sendOrderConfirmation(orderId, email);
     }
 

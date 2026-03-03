@@ -1,6 +1,8 @@
 import './globals.css' 
 import type { Metadata } from 'next'
 import Providers from './providers'
+import WhatsAppFloat from "@/components/WhatsAppFloat"; 
+
 
 export const metadata: Metadata = {
   title: 'Pink Basket',
@@ -18,7 +20,9 @@ export default function RootLayout({
         <Providers>
           {children}
         </Providers>
+         <WhatsAppFloat />
+        
       </body>
     </html>
-  )
+  );
 }
