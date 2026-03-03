@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { ShoppingCart, Search, Plus, Minus } from "lucide-react";
+import { ShoppingCart, Search, Plus, Minus, Package } from "lucide-react";
 
 export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
@@ -112,6 +113,11 @@ export default function ShopPage() {
                 className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-[#6E6E6E] dark:text-[#888888]"
               />
             </div>
+
+            <Link href="/track-order" className="flex items-center gap-2 text-sm font-medium text-[#4D4D4D] dark:text-[#B0B0B0] hover:text-pink-600 dark:hover:text-pink-400 transition-colors">
+              <Package size={18} />
+              <span className="hidden sm:inline">Track Order</span>
+            </Link>  
 
             {/* Cart Button */}
             <button
